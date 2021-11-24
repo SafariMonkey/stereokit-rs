@@ -6,3 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+reactphysics3d-sys = { git = "https://github.com/SafariMonkey/reactphysics3d-sys", rev = "91ecd58c052d16338561c8e1e73eda5d793a27be" }
+openxr = { version = "0.15.4" }
+
+[build-dependencies]
+dunce = "1.0.2"
+glob = "0.3.0"
+
+[build-dependencies.cc]
+features = ["parallel"]
+version = "1.0.70"
