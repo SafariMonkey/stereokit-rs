@@ -12,6 +12,7 @@ openxr = { version = "0.15.4" }
 [build-dependencies]
 dunce = "1.0.2"
 glob = "0.3.0"
+bindgen = "0.59.1"
 
 [build-dependencies.cc]
 features = ["parallel"]
