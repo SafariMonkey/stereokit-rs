@@ -16,3 +16,6 @@ bindgen = "0.59.1"
 [build-dependencies.cc]
 features = ["parallel"]
 version = "1.0.70"
+
+[dev-dependencies]
+c_str_macro = "1.0.3"
