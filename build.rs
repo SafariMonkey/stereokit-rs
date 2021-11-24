@@ -96,4 +96,12 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+
+    println!("cargo:rustc-link-lib=openxr_loader");
+    println!("cargo:rustc-link-lib=stereokit");
+    println!("cargo:rustc-link-lib=reactphysics3d");
+    println!("cargo:rustc-link-lib=GL");
+    println!("cargo:rustc-link-lib=GLEW");
+    println!("cargo:rustc-link-lib=X11");
+    println!("cargo:rustc-link-lib=fontconfig");
 }
