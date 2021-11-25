@@ -82,9 +82,12 @@ fn main() {
 
     println!("cargo:rerun-if-changed=wrapper.h");
 
+    let exposed_functions = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/exposed_functions.txt"));
+    let exposed_functions_re = exposed_functions.lines().collect::<Vec<_>>().join("|");
+
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
-        .allowlist_function("sk_.*")
+        .allowlist_function(exposed_functions_re)
         .allowlist_recursively(true)
         .clang_arg("-Ivendor/StereoKitC")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
