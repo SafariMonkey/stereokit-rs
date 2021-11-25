@@ -1,3 +1,4 @@
 /target
 /sys/target
+/generator/summaries.json
 Cargo.lock
