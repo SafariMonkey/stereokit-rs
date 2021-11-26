@@ -28,7 +28,7 @@ struct Member {
     returns: Option<Vec<Returns>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Summary {
     #[serde(rename = "$value")]
     content: String,
@@ -70,9 +70,26 @@ fn main() {
     let summaries = parsed
         .members
         .members
-        .into_iter()
-        .filter_map(|m| m.summary.map(|s| (m.name, s)))
-        .collect::<IndexMap<_, _>>();
+        .iter()
+        .flat_map(|m| {
+            m.summary.clone().map(|s| {
+                std::iter::once((m.name.clone(), s.content.clone()))
+                    .chain(
+                        m.params
+                            .iter()
+                            .flatten()
+                            .map(|p| (format!("{}~{}", m.name, p.name), p.content.clone())),
+                    )
+                    .chain(
+                        m.returns
+                            .iter()
+                            .flatten()
+                            .map(|r| (format!("{}->", m.name.clone()), r.content.clone())),
+                    )
+            })
+        })
+        .flatten()
+        .collect::<IndexMap<String, String>>();
 
     serde_json::to_writer(dest, &summaries).expect("failed serializing json");
 }
