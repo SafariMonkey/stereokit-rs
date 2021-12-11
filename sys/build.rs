@@ -27,7 +27,7 @@ fn main() {
     let root =
         PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"));
     let root = dunce::canonicalize(root).expect("root dir");
-    let vendor = root.join("vendor");
+    let vendor = root.join("../vendor");
     let config_dir = vendor.join("include");
 
     // cc crate needs emscripten target to use correct `ar`
@@ -47,17 +47,17 @@ fn main() {
     );
 
     let source_dirs = [
-        "vendor/StereoKitC",
-        "vendor/StereoKitC/libraries",
-        "vendor/StereoKitC/tools",
-        "vendor/StereoKitC/systems",
-        "vendor/StereoKitC/systems/hand",
-        "vendor/StereoKitC/systems/platform",
-        "vendor/StereoKitC/asset_types",
+        "../vendor/StereoKitC",
+        "../vendor/StereoKitC/libraries",
+        "../vendor/StereoKitC/tools",
+        "../vendor/StereoKitC/systems",
+        "../vendor/StereoKitC/systems/hand",
+        "../vendor/StereoKitC/systems/platform",
+        "../vendor/StereoKitC/asset_types",
     ];
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
     if target_os == "linux" {
-        c.include("vendor/StereoKitC/lib/include_no_win");
+        c.include("../vendor/StereoKitC/lib/include_no_win");
     }
     for dir in source_dirs.iter() {
         let dir = Path::new(dir);
@@ -89,7 +89,7 @@ fn main() {
         .header("wrapper.h")
         .allowlist_function(exposed_functions_re)
         .allowlist_recursively(true)
-        .clang_arg("-Ivendor/StereoKitC")
+        .clang_arg("-I../vendor/StereoKitC")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("Unable to generate bindings");

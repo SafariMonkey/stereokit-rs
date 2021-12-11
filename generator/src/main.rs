@@ -56,7 +56,7 @@ fn main() {
     let source = File::open(
         args.next()
             .map(PathBuf::from)
-            .unwrap_or_else(|| manifest_dir.join("../sys/vendor/bin/StereoKit.xml")),
+            .unwrap_or_else(|| manifest_dir.join("../vendor/bin/StereoKit.xml")),
     )
     .expect("failed to open doc XML file");
     let dest_summaries = File::create(
