@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     env,
     fs::File,
+    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -58,12 +59,18 @@ fn main() {
             .unwrap_or_else(|| manifest_dir.join("../sys/vendor/bin/StereoKit.xml")),
     )
     .expect("failed to open doc XML file");
-    let dest = File::create(
+    let dest_summaries = File::create(
         args.next()
             .map(PathBuf::from)
             .unwrap_or_else(|| manifest_dir.join("summaries.json")),
     )
-    .expect("failed to open doc XML file");
+    .expect("failed to open destination JSON");
+    let mut dest_blank_checklist = File::create(
+        args.next()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| manifest_dir.join("checklist.blank.md")),
+    )
+    .expect("failed to open destination .md");
 
     let parsed: Doc = serde_xml_rs::from_reader(&source).expect("deserialization failed");
 
@@ -91,5 +98,14 @@ fn main() {
         .flatten()
         .collect::<IndexMap<String, String>>();
 
-    serde_json::to_writer(dest, &summaries).expect("failed serializing json");
+    serde_json::to_writer(dest_summaries, &summaries).expect("failed serializing json");
+
+    let checklist = parsed
+        .members
+        .members
+        .iter()
+        .map(|m| format!("- [ ] {}\n", m.name))
+        .collect::<String>();
+
+    dest_blank_checklist.write_all(checklist.as_bytes()).expect("writing checklist failed");
 }
