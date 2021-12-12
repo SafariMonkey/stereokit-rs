@@ -1,4 +1,5 @@
 sk_init
+sk_set_app_callback
 sk_set_window
 sk_set_window_xam
 sk_shutdown

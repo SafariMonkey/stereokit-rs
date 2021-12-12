@@ -1,3 +1,8 @@
+pub mod settings;
+
+mod state;
+pub use state::StereoKit;
+
 #[cfg(test)]
 mod tests {
     #[test]
