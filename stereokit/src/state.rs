@@ -15,22 +15,34 @@ use crate::settings::Settings;
 
 static LIBRARY_IN_USE: AtomicBool = AtomicBool::new(false);
 
-static CAUGHT_PANIC: Lazy<Mutex<Option<Box<dyn Any + Send + 'static>>>> =
-    Lazy::new(|| Mutex::new(None));
+type PanicPayload = Box<dyn Any + Send + 'static>;
 
 pub struct StereoKit {
     _not_send: PhantomData<*const ()>,
     needs_shutdown: bool,
 }
 
-extern "C" fn callback_trampoline<ST>(payload_ptr: *mut c_void) {
-    let payload: &mut (&mut dyn FnMut(&mut ST), &mut ST) =
-        unsafe { std::mem::transmute(payload_ptr) };
-    let (closure, state) = payload;
+/// SAFETY: payload_ptr must point to a value of type
+/// `(&mut F, &mut ST, &mut Option<PanicPayload>)`.
+/// It must also not be called synchronously with itself
+/// or any other callback using the same parameters (due to &mut).
+/// If `caught_panic` is written to, `F` and `ST` are
+/// panic-poisoned, and the panic should likely be propagated.
+unsafe extern "C" fn callback_trampoline<F, ST>(payload_ptr: *mut c_void)
+where
+    F: FnMut(&mut ST),
+{
+    let payload: &mut (&mut F, &mut ST, &mut Option<PanicPayload>) =
+        std::mem::transmute(payload_ptr);
+    let (closure, state, caught_panic) = payload;
+
+    if caught_panic.is_some() {
+        // we should consider the state poisoned and not run the callback
+        return;
+    }
 
     // SAFETY:
-    // the call to `resume_unwind` in StereoKit::run means
-    // closure variables and state cannot be observed
+    // the caller must ensure closure variables and state cannot be observed
     // after the panic without catching the panic,
     // which will in turn require them to be UnwindSafe
     let mut closure = AssertUnwindSafe(closure);
@@ -38,15 +50,8 @@ extern "C" fn callback_trampoline<ST>(payload_ptr: *mut c_void) {
 
     let result = std::panic::catch_unwind(move || closure(*state));
     if let Err(panic_payload) = result {
-        match CAUGHT_PANIC.lock() {
-            Ok(mut inner) => {
-                inner.replace(panic_payload);
-            }
-            Err(_) => {
-                // CAUGHT_PANIC is poisoned, so StereoKit::run will panic on read anyway.
-            }
-        };
-        unsafe { stereokit_sys::sk_quit() };
+        caught_panic.replace(panic_payload);
+        stereokit_sys::sk_quit();
     }
 }
 
@@ -73,23 +78,29 @@ impl StereoKit {
         U: FnMut(&mut ST),
         S: FnMut(&mut ST),
     {
-        let mut update_ref: (&mut dyn FnMut(&mut ST), &mut ST) = (&mut update, state);
-        let update_raw = &mut update_ref as *mut (&mut dyn FnMut(&mut ST), &mut ST) as *mut c_void;
-        let mut shutdown_ref: (&mut dyn FnMut(&mut ST), &mut ST) = (&mut shutdown, state);
+        // use one variable so shutdown doesn't run if update panics
+        let mut caught_panic = Option::<PanicPayload>::None;
+
+        let mut update_ref: (&mut U, &mut ST, &mut Option<PanicPayload>) =
+            (&mut update, state, &mut caught_panic);
+        let update_raw =
+            &mut update_ref as *mut (&mut U, &mut ST, &mut Option<PanicPayload>) as *mut c_void;
+
+        let mut shutdown_ref: (&mut S, &mut ST, &mut Option<PanicPayload>) =
+            (&mut shutdown, state, &mut caught_panic);
         let shutdown_raw =
-            &mut shutdown_ref as *mut (&mut dyn FnMut(&mut ST), &mut ST) as *mut c_void;
+            &mut shutdown_ref as *mut (&mut S, &mut ST, &mut Option<PanicPayload>) as *mut c_void;
 
         self.needs_shutdown = false;
         unsafe {
             stereokit_sys::sk_run_data(
-                Some(callback_trampoline::<ST>),
+                Some(callback_trampoline::<U, ST>),
                 update_raw,
-                Some(callback_trampoline::<ST>),
+                Some(callback_trampoline::<S, ST>),
                 shutdown_raw,
             );
         }
 
-        let caught_panic = CAUGHT_PANIC.lock().unwrap().take();
         if let Some(panic_payload) = caught_panic {
             std::panic::resume_unwind(panic_payload);
         }
