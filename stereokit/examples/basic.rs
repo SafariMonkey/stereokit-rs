@@ -31,6 +31,10 @@ fn main() -> anyhow::Result<()> {
         &mut (&mut i, &j),
         |(i, j)| {
             println!("{} {}", j, i);
+            if **i >= 32 {
+                // panics trigger an application quit:
+                // panic!("{} >= 32", i)
+            }
             **i += 1
         },
         |(i, j)| println!("shutting down: {} {}", j, i),

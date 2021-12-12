@@ -2,14 +2,21 @@ use std::ffi::c_void;
 // Thanks to https://adventures.michaelfbryan.com/posts/pragmatic-global-state/
 use std::marker::PhantomData;
 
+use std::any::Any;
 use std::os::raw::c_int;
+use std::panic::AssertUnwindSafe;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 
+use once_cell::sync::Lazy;
 use snafu::Snafu;
 
 use crate::settings::Settings;
 
 static LIBRARY_IN_USE: AtomicBool = AtomicBool::new(false);
+
+static CAUGHT_PANIC: Lazy<Mutex<Option<Box<dyn Any + Send + 'static>>>> =
+    Lazy::new(|| Mutex::new(None));
 
 pub struct StereoKit {
     _not_send: PhantomData<*const ()>,
@@ -20,7 +27,27 @@ extern "C" fn callback_trampoline<ST>(payload_ptr: *mut c_void) {
     let payload: &mut (&mut dyn FnMut(&mut ST), &mut ST) =
         unsafe { std::mem::transmute(payload_ptr) };
     let (closure, state) = payload;
-    closure(*state)
+
+    // SAFETY:
+    // the call to `resume_unwind` in StereoKit::run means
+    // closure variables and state cannot be observed
+    // after the panic without catching the panic,
+    // which will in turn require them to be UnwindSafe
+    let mut closure = AssertUnwindSafe(closure);
+    let mut state = AssertUnwindSafe(state);
+
+    let result = std::panic::catch_unwind(move || closure(*state));
+    if let Err(panic_payload) = result {
+        match CAUGHT_PANIC.lock() {
+            Ok(mut inner) => {
+                inner.replace(panic_payload);
+            }
+            Err(_) => {
+                // CAUGHT_PANIC is poisoned, so StereoKit::run will panic on read anyway.
+            }
+        };
+        unsafe { stereokit_sys::sk_quit() };
+    }
 }
 
 impl StereoKit {
@@ -60,6 +87,11 @@ impl StereoKit {
                 Some(callback_trampoline::<ST>),
                 shutdown_raw,
             );
+        }
+
+        let caught_panic = CAUGHT_PANIC.lock().unwrap().take();
+        if let Some(panic_payload) = caught_panic {
+            std::panic::resume_unwind(panic_payload);
         }
     }
 }
