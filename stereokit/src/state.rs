@@ -3,12 +3,10 @@ use std::ffi::c_void;
 use std::marker::PhantomData;
 
 use std::any::Any;
-use std::os::raw::c_int;
+
 use std::panic::AssertUnwindSafe;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
 
-use once_cell::sync::Lazy;
 use snafu::Snafu;
 
 use crate::settings::Settings;
@@ -32,8 +30,7 @@ unsafe extern "C" fn callback_trampoline<F, ST>(payload_ptr: *mut c_void)
 where
     F: FnMut(&mut ST),
 {
-    let payload: &mut (&mut F, &mut ST, &mut Option<PanicPayload>) =
-        std::mem::transmute(payload_ptr);
+    let payload = &mut *(payload_ptr as *mut (&mut F, &mut ST, &mut Option<PanicPayload>));
     let (closure, state, caught_panic) = payload;
 
     if caught_panic.is_some() {

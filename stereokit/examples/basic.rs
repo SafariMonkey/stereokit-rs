@@ -22,7 +22,7 @@ fn main() -> anyhow::Result<()> {
         overlay_priority: 0,
     };
 
-    let mut sk = StereoKit::init(settings)?;
+    let sk = StereoKit::init(settings)?;
 
     let mut i = 0;
     let j = "test".to_owned();
