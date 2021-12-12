@@ -11,55 +11,64 @@ use crate::settings::Settings;
 
 static LIBRARY_IN_USE: AtomicBool = AtomicBool::new(false);
 
-pub struct StereoKit<'f> {
+pub struct StereoKit {
     _not_send: PhantomData<*const ()>,
-    raw_callback: *mut Box<dyn FnMut() + 'f>,
+    needs_shutdown: bool,
 }
 
-extern "C" fn callback_trampoline(arg: *mut c_void) {
-    let closure: &mut Box<dyn FnMut()> = unsafe { std::mem::transmute(arg) };
-    closure()
+extern "C" fn callback_trampoline<ST>(payload_ptr: *mut c_void) {
+    let payload: &mut (&mut dyn FnMut(&mut ST), &mut ST) =
+        unsafe { std::mem::transmute(payload_ptr) };
+    let (closure, state) = payload;
+    closure(*state)
 }
 
-impl<'f> StereoKit<'f> {
-    pub fn init<F>(settings: Settings, callback: F) -> Result<StereoKit<'f>, Error>
-    where
-        F: FnMut(),
-        F: 'f,
-    {
+impl StereoKit {
+    pub fn init(settings: Settings) -> Result<StereoKit, Error> {
         if LIBRARY_IN_USE.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
             == Ok(false)
         {
-            unsafe { stereokit_sys::sk_init(settings.as_native()) };
-
-            let boxed_callback: Box<Box<dyn FnMut() + 'f>> = Box::new(Box::new(callback));
-            let raw_callback = Box::into_raw(boxed_callback);
-            unsafe {
-                stereokit_sys::sk_set_app_callback(
-                    Some(callback_trampoline),
-                    raw_callback as *mut _,
-                );
-            }
-
+            let init_success = unsafe { stereokit_sys::sk_init(settings.as_native()) };
+            if init_success != 1 {
+                return Err(Error::FailedInititalization);
+            };
             Ok(Self {
                 _not_send: PhantomData,
-                raw_callback,
+                needs_shutdown: true,
             })
         } else {
             Err(Error::AlreadyInUse)
         }
     }
 
-    pub fn run(&mut self) {
-        while unsafe { stereokit_sys::sk_step() } == 1 {}
+    pub fn run<ST, U, S>(mut self, state: &mut ST, mut update: U, mut shutdown: S)
+    where
+        U: FnMut(&mut ST),
+        S: FnMut(&mut ST),
+    {
+        let mut update_ref: (&mut dyn FnMut(&mut ST), &mut ST) = (&mut update, state);
+        let update_raw = &mut update_ref as *mut (&mut dyn FnMut(&mut ST), &mut ST) as *mut c_void;
+        let mut shutdown_ref: (&mut dyn FnMut(&mut ST), &mut ST) = (&mut shutdown, state);
+        let shutdown_raw =
+            &mut shutdown_ref as *mut (&mut dyn FnMut(&mut ST), &mut ST) as *mut c_void;
+
+        self.needs_shutdown = false;
+        unsafe {
+            stereokit_sys::sk_run_data(
+                Some(callback_trampoline::<ST>),
+                update_raw,
+                Some(callback_trampoline::<ST>),
+                shutdown_raw,
+            );
+        }
     }
 }
 
-impl<'f> Drop for StereoKit<'f> {
+impl Drop for StereoKit {
     fn drop(&mut self) {
-        unsafe { stereokit_sys::sk_shutdown() };
-        // drop the callback
-        let _: Box<Box<dyn FnMut()>> = unsafe { Box::from_raw(self.raw_callback as *mut _) };
+        if self.needs_shutdown {
+            unsafe { stereokit_sys::sk_shutdown() };
+        }
         LIBRARY_IN_USE.store(false, Ordering::SeqCst);
     }
 }
@@ -69,6 +78,8 @@ impl<'f> Drop for StereoKit<'f> {
 pub enum Error {
     #[snafu(display("StereoKit is already in use"))]
     AlreadyInUse,
+    #[snafu(display("StereoKit inititalization failed"))]
+    FailedInititalization,
 }
 
 #[cfg(test)]

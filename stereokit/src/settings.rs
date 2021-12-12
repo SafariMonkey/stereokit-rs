@@ -17,6 +17,7 @@ pub struct Settings {
     pub flatscreen_width: i32,
     pub flatscreen_height: i32,
     pub disable_flatscreen_mr_sim: bool,
+    pub disable_unfocused_sleep: bool,
 }
 
 impl Settings {
@@ -36,6 +37,7 @@ impl Settings {
             flatscreen_width: self.flatscreen_width,
             flatscreen_height: self.flatscreen_height,
             disable_flatscreen_mr_sim: self.disable_flatscreen_mr_sim as i32,
+            disable_unfocused_sleep: self.disable_unfocused_sleep as i32,
             android_java_vm: std::ptr::null_mut(),
             android_activity: std::ptr::null_mut(),
         }

@@ -10,6 +10,7 @@ fn main() {
         blend_preference: sk_sys::display_blend__display_blend_none,
         no_flatscreen_fallback: 0,
         disable_flatscreen_mr_sim: 0,
+        disable_unfocused_sleep: 0,
         depth_mode: sk_sys::depth_mode__depth_mode_balanced,
         flatscreen_pos_x: 0,
         flatscreen_pos_y: 0,
