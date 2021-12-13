@@ -20,6 +20,28 @@ pub struct Settings {
     pub disable_unfocused_sleep: bool,
 }
 
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            app_name: "StereoKit App".to_owned(),
+            assets_folder: "Assets".to_owned(),
+            display_preference: DisplayMode::MixedReality,
+            blend_preference: DisplayBlend::NONE,
+            no_flatscreen_fallback: false,
+            disable_flatscreen_mr_sim: false,
+            disable_unfocused_sleep: false,
+            depth_mode: DepthMode::Balanced,
+            flatscreen_pos_x: 0,
+            flatscreen_pos_y: 0,
+            flatscreen_width: 0,
+            flatscreen_height: 0,
+            log_filter: Log::Diagnostic,
+            overlay_app: false,
+            overlay_priority: 0,
+        }
+    }
+}
+
 impl Settings {
     pub(crate) fn as_native(&self) -> stereokit_sys::sk_settings_t {
         stereokit_sys::sk_settings_t {
