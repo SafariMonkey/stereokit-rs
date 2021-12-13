@@ -1,4 +1,4 @@
-use bitflags::bitflags;
+use derive_more::{BitAnd, BitOr};
 
 #[repr(C)]
 #[derive(Debug, Clone)]
@@ -48,7 +48,7 @@ impl Settings {
             app_name: ustr::ustr(&self.app_name).as_char_ptr(),
             assets_folder: ustr::ustr(&self.assets_folder).as_char_ptr(),
             display_preference: self.display_preference as u32,
-            blend_preference: self.blend_preference.bits,
+            blend_preference: self.blend_preference.0,
             no_flatscreen_fallback: self.no_flatscreen_fallback as i32,
             depth_mode: self.depth_mode as u32,
             log_filter: self.log_filter as u32,
@@ -93,40 +93,45 @@ pub enum Log {
     Error = stereokit_sys::log__log_error,
 }
 
-bitflags! {
-    pub struct Display: u32 {
-        const NONE = stereokit_sys::display__display_none;
-        const OPAQUE = stereokit_sys::display__display_opaque;
-        const ADDITIVE = stereokit_sys::display__display_additive;
-        const BLEND = stereokit_sys::display__display_blend;
-        const PASSTHROUGH = stereokit_sys::display__display_passthrough;
+#[derive(Debug, Copy, Clone, BitAnd, BitOr)]
+pub struct Display(u32);
+impl Display {
+    pub const NONE: Self = Self(stereokit_sys::display__display_none);
+    pub const OPAQUE: Self = Self(stereokit_sys::display__display_opaque);
+    pub const ADDITIVE: Self = Self(stereokit_sys::display__display_additive);
+    pub const BLEND: Self = Self(stereokit_sys::display__display_blend);
+    pub const PASSTHROUGH: Self = Self(stereokit_sys::display__display_passthrough);
 
-        const ANY_TRANSPARENT = stereokit_sys::display__display_any_transparent;
-    }
+    pub const ANY_TRANSPARENT: Self = Self(stereokit_sys::display__display_any_transparent);
+}
 
-    pub struct DisplayBlend: u32 {
-        const NONE = stereokit_sys::display_blend__display_blend_none;
-        const OPAQUE = stereokit_sys::display_blend__display_blend_opaque;
-        const ADDITIVE = stereokit_sys::display_blend__display_blend_additive;
-        const BLEND = stereokit_sys::display_blend__display_blend_blend;
+#[derive(Debug, Copy, Clone, BitAnd, BitOr)]
+pub struct DisplayBlend(u32);
+impl DisplayBlend {
+    pub const NONE: Self = Self(stereokit_sys::display_blend__display_blend_none);
+    pub const OPAQUE: Self = Self(stereokit_sys::display_blend__display_blend_opaque);
+    pub const ADDITIVE: Self = Self(stereokit_sys::display_blend__display_blend_additive);
+    pub const BLEND: Self = Self(stereokit_sys::display_blend__display_blend_blend);
 
-        const ANY_TRANSPARENT = stereokit_sys::display_blend__display_blend_any_transparent;
-    }
+    pub const ANY_TRANSPARENT: Self =
+        Self(stereokit_sys::display_blend__display_blend_any_transparent);
+}
 
-    pub struct RenderLayer: u32 {
-        const L0 = stereokit_sys::render_layer__render_layer_0;
-        const L1 = stereokit_sys::render_layer__render_layer_1;
-        const L2 = stereokit_sys::render_layer__render_layer_2;
-        const L3 = stereokit_sys::render_layer__render_layer_3;
-        const L4 = stereokit_sys::render_layer__render_layer_4;
-        const L5 = stereokit_sys::render_layer__render_layer_5;
-        const L6 = stereokit_sys::render_layer__render_layer_6;
-        const L7 = stereokit_sys::render_layer__render_layer_7;
-        const L8 = stereokit_sys::render_layer__render_layer_8;
-        const L9 = stereokit_sys::render_layer__render_layer_9;
-        const VFX = stereokit_sys::render_layer__render_layer_vfx;
+#[derive(Debug, Copy, Clone, BitAnd, BitOr)]
+pub struct RenderLayer(u32);
+impl RenderLayer {
+    pub const L0: Self = Self(stereokit_sys::render_layer__render_layer_0);
+    pub const L1: Self = Self(stereokit_sys::render_layer__render_layer_1);
+    pub const L2: Self = Self(stereokit_sys::render_layer__render_layer_2);
+    pub const L3: Self = Self(stereokit_sys::render_layer__render_layer_3);
+    pub const L4: Self = Self(stereokit_sys::render_layer__render_layer_4);
+    pub const L5: Self = Self(stereokit_sys::render_layer__render_layer_5);
+    pub const L6: Self = Self(stereokit_sys::render_layer__render_layer_6);
+    pub const L7: Self = Self(stereokit_sys::render_layer__render_layer_7);
+    pub const L8: Self = Self(stereokit_sys::render_layer__render_layer_8);
+    pub const L9: Self = Self(stereokit_sys::render_layer__render_layer_9);
+    pub const VFX: Self = Self(stereokit_sys::render_layer__render_layer_vfx);
 
-        const ALL = stereokit_sys::render_layer__render_layer_all;
-        const ALL_REGULAR = stereokit_sys::render_layer__render_layer_all_regular;
-    }
+    pub const ALL: Self = Self(stereokit_sys::render_layer__render_layer_all);
+    pub const ALL_REGULAR: Self = Self(stereokit_sys::render_layer__render_layer_all_regular);
 }
