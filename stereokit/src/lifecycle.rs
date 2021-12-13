@@ -10,6 +10,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use snafu::Snafu;
 
 use crate::settings::Settings;
+use crate::state::StereoKitState as SKState;
 
 static LIBRARY_IN_USE: AtomicBool = AtomicBool::new(false);
 
@@ -17,22 +18,23 @@ type PanicPayload = Box<dyn Any + Send + 'static>;
 
 pub struct StereoKit {
     _not_send: PhantomData<*const ()>,
+    state: SKState,
     needs_shutdown: bool,
-    // TODO: default entities
 }
 
 /// SAFETY: payload_ptr must point to a value of type
-/// `(&mut F, &mut ST, &mut Option<PanicPayload>)`.
+/// `(&mut F, &mut LST, &mut GST, &mut Option<PanicPayload>)`.
 /// It must also not be called synchronously with itself
 /// or any other callback using the same parameters (due to &mut).
-/// If `caught_panic` is written to, `F` and `ST` are
+/// If `caught_panic` is written to, `F` and `LST` are
 /// panic-poisoned, and the panic should likely be propagated.
-unsafe extern "C" fn callback_trampoline<F, ST>(payload_ptr: *mut c_void)
+unsafe extern "C" fn callback_trampoline<F, LST, GST>(payload_ptr: *mut c_void)
 where
-    F: FnMut(&mut ST),
+    F: FnMut(&mut LST, &mut GST),
 {
-    let payload = &mut *(payload_ptr as *mut (&mut F, &mut ST, &mut Option<PanicPayload>));
-    let (closure, state, caught_panic) = payload;
+    let payload =
+        &mut *(payload_ptr as *mut (&mut F, &mut LST, &mut GST, &mut Option<PanicPayload>));
+    let (closure, state, global_state, caught_panic) = payload;
 
     if caught_panic.is_some() {
         // we should consider the state poisoned and not run the callback
@@ -44,8 +46,10 @@ where
     // which will in turn require them to be UnwindSafe
     let mut closure = AssertUnwindSafe(closure);
     let mut state = AssertUnwindSafe(state);
+    // TODO: is global state always safe to be re-observed after a shutdown?
+    let mut global_state = AssertUnwindSafe(global_state);
 
-    let result = std::panic::catch_unwind(move || closure(*state));
+    let result = std::panic::catch_unwind(move || closure(*state, *global_state));
     if let Err(panic_payload) = result {
         caught_panic.replace(panic_payload);
         stereokit_sys::sk_quit();
@@ -63,6 +67,7 @@ impl StereoKit {
             };
             Ok(Self {
                 _not_send: PhantomData,
+                state: SKState {},
                 needs_shutdown: true,
             })
         } else {
@@ -70,30 +75,36 @@ impl StereoKit {
         }
     }
 
+    pub fn state_mut(&mut self) -> &mut SKState {
+        &mut self.state
+    }
+
     pub fn run<ST, U, S>(mut self, state: &mut ST, mut update: U, mut shutdown: S)
     where
-        U: FnMut(&mut ST),
-        S: FnMut(&mut ST),
+        U: FnMut(&mut ST, &mut SKState),
+        S: FnMut(&mut ST, &mut SKState),
     {
         // use one variable so shutdown doesn't run if update panics
         let mut caught_panic = Option::<PanicPayload>::None;
 
-        let mut update_ref: (&mut U, &mut ST, &mut Option<PanicPayload>) =
-            (&mut update, state, &mut caught_panic);
-        let update_raw =
-            &mut update_ref as *mut (&mut U, &mut ST, &mut Option<PanicPayload>) as *mut c_void;
+        let mut update_ref: (&mut U, &mut ST, &mut SKState, &mut Option<PanicPayload>) =
+            (&mut update, state, &mut self.state, &mut caught_panic);
+        let update_raw = &mut update_ref
+            as *mut (&mut U, &mut ST, &mut SKState, &mut Option<PanicPayload>)
+            as *mut c_void;
 
-        let mut shutdown_ref: (&mut S, &mut ST, &mut Option<PanicPayload>) =
-            (&mut shutdown, state, &mut caught_panic);
-        let shutdown_raw =
-            &mut shutdown_ref as *mut (&mut S, &mut ST, &mut Option<PanicPayload>) as *mut c_void;
+        let mut shutdown_ref: (&mut S, &mut ST, &mut SKState, &mut Option<PanicPayload>) =
+            (&mut shutdown, state, &mut self.state, &mut caught_panic);
+        let shutdown_raw = &mut shutdown_ref
+            as *mut (&mut S, &mut ST, &mut SKState, &mut Option<PanicPayload>)
+            as *mut c_void;
 
         self.needs_shutdown = false;
         unsafe {
             stereokit_sys::sk_run_data(
-                Some(callback_trampoline::<U, ST>),
+                Some(callback_trampoline::<U, ST, SKState>),
                 update_raw,
-                Some(callback_trampoline::<S, ST>),
+                Some(callback_trampoline::<S, ST, SKState>),
                 shutdown_raw,
             );
         }

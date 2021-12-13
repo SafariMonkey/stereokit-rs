@@ -3,6 +3,9 @@ pub mod settings;
 mod lifecycle;
 pub use lifecycle::StereoKit;
 
+pub mod state;
+pub use state::StereoKitState;
+
 #[cfg(test)]
 mod tests {
     #[test]
