@@ -9,7 +9,7 @@ pub struct Settings {
     pub blend_preference: DisplayBlend,
     pub no_flatscreen_fallback: bool,
     pub depth_mode: DepthMode,
-    pub log_filter: Log,
+    pub log_filter: LogLevel,
     pub overlay_app: bool,
     pub overlay_priority: u32,
     pub flatscreen_pos_x: i32,
@@ -35,7 +35,7 @@ impl Default for Settings {
             flatscreen_pos_y: 0,
             flatscreen_width: 0,
             flatscreen_height: 0,
-            log_filter: Log::Diagnostic,
+            log_filter: LogLevel::Diagnostic,
             overlay_app: false,
             overlay_priority: 0,
         }
@@ -85,7 +85,7 @@ pub enum DepthMode {
 
 #[derive(Debug, Copy, Clone)]
 #[repr(u32)]
-pub enum Log {
+pub enum LogLevel {
     None = stereokit_sys::log__log_none,
     Diagnostic = stereokit_sys::log__log_diagnostic,
     Inform = stereokit_sys::log__log_inform,
