@@ -18,6 +18,7 @@ type PanicPayload = Box<dyn Any + Send + 'static>;
 pub struct StereoKit {
     _not_send: PhantomData<*const ()>,
     needs_shutdown: bool,
+    // TODO: default entities
 }
 
 /// SAFETY: payload_ptr must point to a value of type
