@@ -39,8 +39,7 @@ where
         return;
     }
 
-    // SAFETY:
-    // the caller must ensure closure variables and state cannot be observed
+    // the caller should ensure closure variables and state cannot be observed
     // after the panic without catching the panic,
     // which will in turn require them to be UnwindSafe
     let mut closure = AssertUnwindSafe(closure);
