@@ -185,6 +185,23 @@ fn impl_repr(ast: &syn::DeriveInput) -> Result<TokenStream, error::Dirty> {
 
     let crate_path = util::crate_ident_new();
 
+    let repr = extract_repr(ast)?;
+
+    let repr_ty = match repr {
+        Repr::C => quote!(#crate_path::ReprC),
+        Repr::Transparent => quote!(#crate_path::ReprTransparent),
+    };
+
+    let gen = quote!(
+        unsafe impl #impl_generics #crate_path::Repr for #input_type #ty_generics #where_clause {
+            type Repr = #repr_ty;
+        }
+    );
+
+    Ok(gen.into())
+}
+
+fn extract_repr(ast: &DeriveInput) -> Result<Repr, error::Dirty> {
     let metas: Vec<NestedMeta> = ast
         .attrs
         .iter()
@@ -193,7 +210,8 @@ fn impl_repr(ast: &syn::DeriveInput) -> Result<TokenStream, error::Dirty> {
         .into_iter()
         .flatten()
         .collect();
-    let repr = match &metas[..] {
+
+    let repr_ident = match &metas[..] {
         [] => {
             emit_error!(
                 ast, "no repr attributes found";
@@ -214,22 +232,20 @@ fn impl_repr(ast: &syn::DeriveInput) -> Result<TokenStream, error::Dirty> {
         }
     }?;
 
-    let repr_ty = if repr.is_ident(&syn::Ident::new("C", Span::call_site())) {
-        quote!(#crate_path::ReprC)
-    } else if repr.is_ident(&syn::Ident::new("transparent", Span::call_site())) {
-        quote!(#crate_path::ReprTransparent)
+    let repr = if repr_ident.is_ident(&syn::Ident::new("C", Span::call_site())) {
+        Repr::C
+    } else if repr_ident.is_ident(&syn::Ident::new("transparent", Span::call_site())) {
+        Repr::Transparent
     } else {
         abort!(
-            repr,
+            repr_ident,
             "only #[repr(C)] and #[repr(transparent)] are supported"
         )
     };
-
-    let gen = quote!(
-        unsafe impl #impl_generics #crate_path::Repr for #input_type #ty_generics #where_clause {
-            type Repr = #repr_ty;
+    Ok(repr)
         }
-    );
 
-    Ok(gen.into())
+enum Repr {
+    C,
+    Transparent,
 }
