@@ -1,3 +1,4 @@
-mod pose;
-mod quat;
-mod vec;
+pub mod matrix;
+pub mod pose;
+pub mod quat;
+pub mod vec;

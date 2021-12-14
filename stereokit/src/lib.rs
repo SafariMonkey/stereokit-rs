@@ -1,12 +1,14 @@
 pub mod settings;
 
 mod lifecycle;
+mod transmute;
 pub use lifecycle::StereoKit;
 
 pub mod state;
 pub use state::StereoKitState;
 
-mod math;
+pub mod assets;
+pub mod math;
 
 #[cfg(test)]
 mod tests {
