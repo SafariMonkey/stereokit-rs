@@ -1,3 +1,5 @@
+pub(crate) use proc_macro_error::SpanRange;
+
 // Dirty is must_use and produced when
 // emit_error is called, so its existence
 // should be equivalent to an error having

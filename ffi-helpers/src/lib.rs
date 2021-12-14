@@ -1,4 +1,4 @@
-pub use ffi_helpers_macros::{FieldType, Transmutable};
+pub use ffi_helpers_macros::{FieldType, Repr, Transmutable};
 
 pub unsafe trait Transmutable<T> {}
 
@@ -8,19 +8,28 @@ pub unsafe trait FieldType<const INDEX: usize> {
     type Type;
 }
 
+pub struct ReprC;
+pub struct ReprTransparent;
+
+pub unsafe trait Repr {
+    type Repr;
+}
+
 pub struct EndFields;
 
 #[cfg(test)]
 mod tests {
-    use crate::{FieldType, Transmutable};
+    use crate::{FieldType, Repr, Transmutable};
 
-    #[derive(Transmutable)]
+    #[derive(Transmutable, Repr)]
+    #[repr(transparent)]
     struct Basic {
         #[allow(dead_code)]
         foo: i32,
     }
 
-    #[derive(FieldType)]
+    #[derive(FieldType, Repr)]
+    #[repr(transparent)]
     struct SingleField<T>(T);
 
     static_assertions::assert_impl_all!(Basic: Transmutable<SingleField<i32>>);
