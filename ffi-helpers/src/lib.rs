@@ -1,8 +1,9 @@
 pub use ffi_helpers_macros::{FieldType, Repr, Transmutable};
+pub use static_assertions;
+
+mod impl_transmutable;
 
 pub unsafe trait Transmutable<T> {}
-
-unsafe impl<T> Transmutable<T> for T {}
 
 pub unsafe trait FieldType<const INDEX: usize> {
     type Type;
@@ -16,7 +17,7 @@ pub unsafe trait Repr {
 }
 
 mod sealed {
-    pub struct  Sealed;
+    pub struct Sealed;
 }
 
 pub struct EndFields(sealed::Sealed);

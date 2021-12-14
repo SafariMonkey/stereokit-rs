@@ -11,6 +11,7 @@ snafu = "0.6.10"
 ustr = "0.8.1"
 once_cell = "1.8.0"
 derive_more = "0.99.16"
+ffi-helpers = {path = "../ffi-helpers"}
 
 [dev-dependencies]
 static_assertions = "1.1.0"

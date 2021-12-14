@@ -4,6 +4,8 @@ use std::env;
 #[allow(unused_imports)]
 use std::path::{Path, PathBuf};
 
+use bindgen::callbacks::ParseCallbacks;
+
 fn compiler(config_dir: &Path, vendor: &Path) -> cc::Build {
     let mut c = cc::Build::new();
     c.include(&config_dir);
@@ -96,6 +98,7 @@ fn main() {
         .allowlist_recursively(true)
         .clang_arg("-I../vendor/StereoKitC")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(TransmuteTraitCallbacks))
         .generate()
         .expect("Unable to generate bindings");
 
@@ -112,4 +115,20 @@ fn main() {
     println!("cargo:rustc-link-lib=GLEW");
     println!("cargo:rustc-link-lib=X11");
     println!("cargo:rustc-link-lib=fontconfig");
+}
+
+#[derive(Debug)]
+struct TransmuteTraitCallbacks;
+
+impl ParseCallbacks for TransmuteTraitCallbacks {
+    fn add_derives(&self, name: &str) -> Vec<String> {
+        match name {
+            "matrix" => vec!["Repr".to_owned()],
+            _ => vec![
+                "FieldType".to_owned(),
+                "Transmutable".to_owned(),
+                "Repr".to_owned(),
+            ],
+        }
+    }
 }

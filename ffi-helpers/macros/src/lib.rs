@@ -19,7 +19,7 @@ mod error;
 mod util;
 
 #[proc_macro_error]
-#[proc_macro_derive(Transmutable)]
+#[proc_macro_derive(Transmutable, attributes(transmutable))]
 pub fn transmutable_derive(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree
     // that we can manipulate
@@ -48,7 +48,8 @@ fn impl_transmutable(ast: &syn::DeriveInput) -> Result<TokenStream, error::Dirty
     let mut where_bounds = Vec::new();
 
     where_bounds.push(quote!(#input_type: #crate_path::Repr));
-    where_bounds.push(quote!(T: #crate_path::Repr<Repr = <#input_type as Repr>::Repr>));
+    where_bounds
+        .push(quote!(T: #crate_path::Repr<Repr = <#input_type as #crate_path::Repr>::Repr>));
 
     for (i, ty) in struct_
         .fields
@@ -63,11 +64,33 @@ fn impl_transmutable(ast: &syn::DeriveInput) -> Result<TokenStream, error::Dirty
             .push(quote!(<T as #crate_path::FieldType<#i>>::Type: #crate_path::Transmutable<#ty>));
     }
 
+    let mut transmute_asserts = Vec::new();
+
+    let transmutable_attrs: Vec<NestedMeta> = ast
+        .attrs
+        .iter()
+        .map(|attr| get_meta_items(attr, "transmutable"))
+        .collect::<Result<Vec<Vec<NestedMeta>>, error::Dirty>>()? // return error on _last_ failure
+        .into_iter()
+        .flatten()
+        .collect();
+    for transmutable_attr in transmutable_attrs {
+        let transmute_target = match &transmutable_attr {
+            NestedMeta::Meta(Meta::Path(word)) => Ok(word),
+            unexpected => {
+                emit_error!(unexpected.span(), "unexpected attribute")
+            }
+        }?;
+
+        transmute_asserts.push(quote!(#crate_path::static_assertions::assert_impl_all!(#input_type: #crate_path::Transmutable<#transmute_target>);));
+    }
+
     let gen = quote! {
         unsafe impl<T> #crate_path::Transmutable<T> for #input_type where #(#where_bounds),* {
         }
-        unsafe impl<T> #crate_path::Transmutable<#input_type> for T where #(#where_bounds),* {
-        }
+        #(
+            #transmute_asserts
+        )*
     };
 
     Ok(gen.into())
@@ -125,19 +148,19 @@ fn impl_field_type(ast: &syn::DeriveInput) -> Result<TokenStream, error::Dirty> 
     Ok(gen.into())
 }
 
-/// Extracts the contents of a #[repr(...)].
-/// Returns empty vec if the contents are not a repr.
-/// If the attribute is repr and fails to parse, abort.
-/// If the contents are wrongly shaped (e.g. #[repr = ...]),
+/// Extracts the contents of a #[xxx(...)].
+/// Returns empty vec if the contents are not a xxx.
+/// If the attribute is xxx and fails to parse, abort.
+/// If the contents are wrongly shaped (e.g. #[xxx = ...]),
 /// it emits an error and continues.
-fn get_meta_items(attr: &syn::Attribute) -> Result<Vec<NestedMeta>, error::Dirty> {
-    if !attr.path.is_ident("repr") {
+fn get_meta_items(attr: &syn::Attribute, ident: &str) -> Result<Vec<NestedMeta>, error::Dirty> {
+    if !attr.path.is_ident(ident) {
         return Ok(Vec::new());
     }
     match attr.parse_meta() {
         Ok(Meta::List(meta)) => Ok(meta.nested.into_iter().collect()),
         Ok(_) => {
-            emit_error!(attr, "Expected #[repr(...)]")
+            emit_error!(attr, "Expected #[{}(...)]", ident)
         }
         Err(e) => {
             crate::abort!(e)
@@ -165,7 +188,7 @@ fn impl_repr(ast: &syn::DeriveInput) -> Result<TokenStream, error::Dirty> {
     let metas: Vec<NestedMeta> = ast
         .attrs
         .iter()
-        .map(get_meta_items)
+        .map(|attr| get_meta_items(attr, "repr"))
         .collect::<Result<Vec<Vec<NestedMeta>>, error::Dirty>>()? // return error on _last_ failure
         .into_iter()
         .flatten()
