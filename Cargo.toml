@@ -3,4 +3,6 @@ members = [
     "generator",
     "sys",
     "stereokit",
+    "ffi-helpers",
+    "ffi-helpers/macros",
 ]

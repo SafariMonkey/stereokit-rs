@@ -6,6 +6,8 @@ pub use lifecycle::StereoKit;
 pub mod state;
 pub use state::StereoKitState;
 
+mod math;
+
 #[cfg(test)]
 mod tests {
     #[test]
