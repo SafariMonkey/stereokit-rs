@@ -1,3 +1,4 @@
+use derive_more::Deref;
 use ffi_helpers::Transmutable;
 
 #[derive(Deref)]
