@@ -26,7 +26,7 @@ pub struct EndFields(sealed::Sealed);
 mod tests {
     use crate::{FieldType, Repr, Transmutable};
 
-    #[derive(Transmutable, Repr)]
+    #[derive(Transmutable, FieldType, Repr)]
     #[repr(transparent)]
     struct Basic {
         #[allow(dead_code)]

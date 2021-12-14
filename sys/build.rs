@@ -124,11 +124,7 @@ impl ParseCallbacks for TransmuteTraitCallbacks {
     fn add_derives(&self, name: &str) -> Vec<String> {
         match name {
             "matrix" => vec!["Repr".to_owned()],
-            _ => vec![
-                "FieldType".to_owned(),
-                "Transmutable".to_owned(),
-                "Repr".to_owned(),
-            ],
+            _ => vec!["FieldType".to_owned(), "Repr".to_owned()],
         }
     }
 }

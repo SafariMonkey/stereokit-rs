@@ -51,17 +51,10 @@ fn impl_transmutable(ast: &syn::DeriveInput) -> Result<TokenStream, error::Dirty
     where_bounds
         .push(quote!(T: #crate_path::Repr<Repr = <#input_type as #crate_path::Repr>::Repr>));
 
-    for (i, ty) in struct_
-        .fields
-        .iter()
-        .map(|f| &f.ty)
-        .map(|ty| quote!(#ty))
-        .chain(once(quote!(#crate_path::EndFields)))
-        .enumerate()
-    {
+    for i in 0..(struct_.fields.iter().count() + 1) {
         where_bounds.push(quote!(T: #crate_path::FieldType<#i>));
         where_bounds
-            .push(quote!(<T as #crate_path::FieldType<#i>>::Type: #crate_path::Transmutable<#ty>));
+            .push(quote!(<#input_type as #crate_path::FieldType<#i>>::Type: #crate_path::Transmutable<<T as #crate_path::FieldType<#i>>::Type>));
     }
 
     let mut transmute_asserts = Vec::new();
@@ -243,7 +236,7 @@ fn extract_repr(ast: &DeriveInput) -> Result<Repr, error::Dirty> {
         )
     };
     Ok(repr)
-        }
+}
 
 enum Repr {
     C,

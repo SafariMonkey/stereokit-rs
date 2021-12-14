@@ -2,7 +2,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-use ffi_helpers::{FieldType, Repr, Transmutable};
+use ffi_helpers::{FieldType, Repr};
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
