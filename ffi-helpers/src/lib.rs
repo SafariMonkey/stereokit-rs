@@ -15,7 +15,11 @@ pub unsafe trait Repr {
     type Repr;
 }
 
-pub struct EndFields;
+mod sealed {
+    pub struct  Sealed;
+}
+
+pub struct EndFields(sealed::Sealed);
 
 #[cfg(test)]
 mod tests {
