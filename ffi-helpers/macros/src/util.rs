@@ -14,10 +14,3 @@ pub fn crate_ident_new() -> Ident {
 
     Ident::new(&crate_name, Span::call_site())
 }
-#[cfg(test)]
-mod tests {
-    #[derive()]
-    struct Basic {
-        foo: i32,
-    }
-}
