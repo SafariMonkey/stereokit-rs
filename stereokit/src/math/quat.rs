@@ -12,12 +12,13 @@ unsafe impl Transmutable<stereokit_sys::quat> for Quat {}
 
 impl Quat {
     pub fn look_dir(at: Vec3) -> Self {
-        unsafe {
-            stereokit_sys::quat_lookat(
-                &Vec3::ZERO.transmute_copy_to() as *const _,
-                &at.transmute_copy_to() as *const _,
-            )
-        }
-        .transmute_copy_from()
+        Self::look_at(Vec3::ZERO, at)
+    }
+
+    pub fn look_at(from: Vec3, at: Vec3) -> Self {
+        let from = from.transmute_copy_to();
+        let at = at.transmute_copy_to();
+        unsafe { stereokit_sys::quat_lookat(&from as *const _, &at as *const _) }
+            .transmute_copy_from()
     }
 }
