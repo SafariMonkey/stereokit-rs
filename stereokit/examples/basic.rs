@@ -13,7 +13,7 @@ fn main() -> anyhow::Result<()> {
 
     sk.run(
         &mut (&mut i, &j),
-        |(i, j)| {
+        |(i, j), _| {
             println!("{} {}", j, i);
             if **i >= 32 {
                 // panics trigger an application quit:
@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
             }
             **i += 1
         },
-        |(i, j)| println!("shutting down: {} {}", j, i),
+        |(i, j), _| println!("shutting down: {} {}", j, i),
     );
 
     println!("after run: {} {}", j, i);
