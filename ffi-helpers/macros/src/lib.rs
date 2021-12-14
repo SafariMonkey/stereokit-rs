@@ -76,6 +76,8 @@ fn impl_transmutable(ast: &syn::DeriveInput) -> Result<TokenStream, error::Dirty
         }?;
 
         transmute_asserts.push(quote!(#crate_path::static_assertions::assert_impl_all!(#input_type: #crate_path::Transmutable<#transmute_target>);));
+        transmute_asserts.push(quote!(#crate_path::static_assertions::assert_eq_size!(#input_type, #transmute_target);));
+        transmute_asserts.push(quote!(#crate_path::static_assertions::assert_eq_align!(#input_type, #transmute_target);));
     }
 
     let gen = quote! {
