@@ -1,4 +1,4 @@
-use crate::transmute::{TransmuteCopy, TransmuteCopyRev};
+use crate::transmute::{Transmute, TransmuteRev};
 use derive_more::Deref;
 use ffi_helpers::Transmutable;
 
@@ -11,6 +11,8 @@ pub struct Quat(pub nalgebra::Quaternion<f32>);
 unsafe impl Transmutable<stereokit_sys::quat> for Quat {}
 
 impl Quat {
+    pub const IDENTITY: Quat = Quat(nalgebra::Quaternion::new(1., 0., 0., 0.));
+
     pub fn look_dir(at: Vec3) -> Self {
         Self::look_at(Vec3::ZERO, at)
     }

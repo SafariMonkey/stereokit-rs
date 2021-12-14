@@ -1,8 +1,8 @@
-use derive_more::Deref;
+use derive_more::{Deref, Neg};
 use ffi_helpers::Transmutable;
 use nalgebra::{Vector2, Vector3, Vector4};
 
-#[derive(Deref, Copy, Clone)]
+#[derive(Deref, Copy, Clone, Neg)]
 #[repr(transparent)]
 pub struct Vec2(pub nalgebra::Vector2<f32>);
 
@@ -18,7 +18,7 @@ impl Vec2 {
     pub const UNIT_Y: Vec2 = Vec2::new(0., 1.);
 }
 
-#[derive(Deref, Copy, Clone)]
+#[derive(Deref, Copy, Clone, Neg)]
 #[repr(transparent)]
 pub struct Vec3(pub nalgebra::Vector3<f32>);
 
@@ -39,7 +39,7 @@ impl Vec3 {
     pub const UNIT_Z: Vec3 = Vec3::new(0., 0., 1.);
 }
 
-#[derive(Deref, Copy, Clone)]
+#[derive(Deref, Copy, Clone, Neg)]
 #[repr(transparent)]
 pub struct Vec4(pub nalgebra::Vector4<f32>);
 

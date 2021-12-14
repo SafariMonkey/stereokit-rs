@@ -1,30 +1,38 @@
 use ffi_helpers::Transmutable;
 
-pub unsafe trait TransmuteCopy<T> {
+pub unsafe trait Transmute<T> {
+    fn transmute_ref_to(&self) -> &T;
     fn transmute_copy_to(&self) -> T;
 }
 
-unsafe impl<T, U> TransmuteCopy<U> for T
+unsafe impl<T, U> Transmute<U> for T
 where
     T: Transmutable<U> + Copy,
     T: Sized,
     U: Sized,
 {
+    fn transmute_ref_to(&self) -> &U {
+        unsafe { std::mem::transmute(self) }
+    }
     fn transmute_copy_to(&self) -> U {
         unsafe { std::mem::transmute_copy(self) }
     }
 }
 
-pub unsafe trait TransmuteCopyRev<T> {
+pub unsafe trait TransmuteRev<T> {
+    fn transmute_ref_from(&self) -> &T;
     fn transmute_copy_from(&self) -> T;
 }
 
-unsafe impl<T, U> TransmuteCopyRev<U> for T
+unsafe impl<T, U> TransmuteRev<U> for T
 where
     U: Transmutable<T> + Copy,
     T: Sized,
     U: Sized,
 {
+    fn transmute_ref_from(&self) -> &U {
+        unsafe { std::mem::transmute(self) }
+    }
     fn transmute_copy_from(&self) -> U {
         unsafe { std::mem::transmute_copy(self) }
     }
