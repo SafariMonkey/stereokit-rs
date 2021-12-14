@@ -1,6 +1,6 @@
 use ffi_helpers::{FieldType, Repr, Transmutable};
 
-use super::{quat::Quat, vec3::Vec3};
+use super::{quat::Quat, vec::Vec3};
 
 #[derive(FieldType, Repr, Transmutable)]
 #[transmutable(stereokit_sys::pose_t)]
