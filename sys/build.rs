@@ -84,7 +84,10 @@ fn main() {
     println!("cargo:rerun-if-changed=vendor/StereoKitC/stereokit.h");
     println!("cargo:rerun-if-changed=exposed_functions.txt");
 
-    let exposed_functions = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/exposed_functions.txt"));
+    let exposed_functions = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/exposed_functions.txt"
+    ));
     let exposed_functions_re = exposed_functions.lines().collect::<Vec<_>>().join("|");
 
     let bindings = bindgen::Builder::default()

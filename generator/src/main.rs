@@ -107,5 +107,7 @@ fn main() {
         .map(|m| format!("- [ ] {}\n", m.name))
         .collect::<String>();
 
-    dest_blank_checklist.write_all(checklist.as_bytes()).expect("writing checklist failed");
+    dest_blank_checklist
+        .write_all(checklist.as_bytes())
+        .expect("writing checklist failed");
 }
