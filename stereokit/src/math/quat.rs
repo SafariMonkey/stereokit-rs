@@ -1,11 +1,7 @@
-use ffi_helpers::{FieldType, Repr, Transmutable};
+use ffi_helpers::Transmutable;
 
-#[derive(FieldType, Repr, Transmutable)]
-#[transmutable(stereokit_sys::quat)]
-#[repr(C)]
-pub struct Quat {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-    pub w: f32,
-}
+#[derive(Deref)]
+#[repr(transparent)]
+pub struct Quat(pub nalgebra::Quaternion<f32>);
+
+unsafe impl Transmutable<stereokit_sys::quat> for Quat {}

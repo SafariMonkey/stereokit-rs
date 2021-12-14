@@ -1,10 +1,8 @@
-use ffi_helpers::{FieldType, Repr, Transmutable};
+use derive_more::Deref;
+use ffi_helpers::Transmutable;
 
-#[derive(FieldType, Repr, Transmutable)]
-#[transmutable(stereokit_sys::vec3)]
-#[repr(C)]
-pub struct Vec3 {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-}
+#[derive(Deref)]
+#[repr(transparent)]
+pub struct Vec3(pub nalgebra::Vector3<f32>);
+
+unsafe impl Transmutable<stereokit_sys::vec3> for Vec3 {}
